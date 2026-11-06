@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#172844" />
+    <title>StuHub · Event tickets &amp; transfers</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="StuHub home">
+        <span class="brand-mark">S</span>
+        <span>StuHub<span class="brand-dot">.</span></span>
+      </a>
+      <span class="topbar-tag">Good nights start with a ticket.</span>
+      <div class="system-state" id="system-state">
+        <span class="state-dot"></span>
+        <span id="system-state-text">Checking service</span>
+      </div>
+    </header>
+
+    <main class="page-shell">
+      <div id="notice" class="notice" role="status" hidden></div>
+
+      <section id="auth-view" class="auth-layout">
+        <div class="intro-copy">
+          <p class="eyebrow">YOUR NEXT GREAT NIGHT STARTS HERE</p>
+          <h1>Find your people. <span>Feel the moment.</span></h1>
+          <p class="intro-description">
+            Find events worth going out for. Reserve your ticket, pay by transfer, and bring your people along.
+          </p>
+          <div class="hero-photo" aria-label="A crowd enjoying a live music event" role="img">
+            <div class="hero-photo-badge"><span class="hero-photo-dot"></span> GOOD TIMES, RIGHT AHEAD</div>
+            <div class="hero-photo-caption">
+              <span class="hero-photo-kicker">MAKE ROOM FOR</span>
+              <strong>the unforgettable.</strong>
+            </div>
+          </div>
+          <div class="welcome-perks" aria-label="Ticketing benefits">
+            <span><span class="perk-check">✓</span>Easy booking</span>
+            <span><span class="perk-check">✓</span>Secure transfer review</span>
+            <span><span class="perk-check">✓</span>Every plan in one place</span>
+          </div>
+        </div>
+
+        <section class="panel auth-panel" aria-labelledby="auth-heading">
+          <div id="auth-form-panel">
+            <div class="auth-tabs" role="group" aria-label="Account actions">
+              <button class="auth-tab active" id="login-tab" type="button" data-mode="login">Sign in</button>
+              <button class="auth-tab" id="register-tab" type="button" data-mode="register">Create account</button>
+            </div>
+            <div class="panel-heading">
+              <p class="eyebrow" id="auth-kicker">WELCOME BACK</p>
+              <h2 id="auth-heading">Sign in to StuHub</h2>
+              <p id="auth-subtitle">Use your account details to continue.</p>
+            </div>
+            <form id="auth-form" class="form-stack">
+              <label id="name-field" hidden>
+                <span>Full name</span>
+                <input name="name" autocomplete="name" placeholder="Your name" />
+              </label>
+              <label>
+                <span>Email address</span>
+                <input name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+              </label>
+              <label>
+                <span>Password</span>
+                <span class="password-input-wrap">
+                  <input id="password-input" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required />
+                  <button class="password-toggle" type="button" data-password-toggle="password-input" aria-controls="password-input" aria-label="Show password" aria-pressed="false">Show</button>
+                </span>
+              </label>
+              <label id="confirm-password-field" hidden>
+                <span>Confirm password</span>
+                <span class="password-input-wrap">
+                  <input id="confirm-password-input" name="confirmPassword" type="password" autocomplete="new-password" placeholder="Enter your password again" />
+                  <button class="password-toggle" type="button" data-password-toggle="confirm-password-input" aria-controls="confirm-password-input" aria-label="Show password confirmation" aria-pressed="false">Show</button>
+                </span>
+                <span id="password-mismatch-message" class="password-mismatch-message" role="alert" hidden>Passwords do not match.</span>
+              </label>
+              <button class="button button-primary button-wide" id="auth-submit" type="submit">Sign in</button>
+            </form>
+            <p class="fine-print" id="auth-fine-print">Sign in to find your tickets, bookings, and event updates.</p>
+          </div>
+          <section id="registration-success" class="registration-success" aria-labelledby="approval-heading" aria-live="polite" hidden>
+            <div class="approval-icon" aria-hidden="true">✓</div>
+            <p class="eyebrow">REQUEST RECEIVED</p>
+            <h2 id="approval-heading">Your account is waiting for approval.</h2>
+            <p class="approval-message" id="approval-message"></p>
+            <div class="approval-steps">
+              <span class="approval-step-number">01</span>
+              <span>An administrator will review your account request.</span>
+              <span class="approval-step-number">02</span>
+              <span>Once approved, return here and sign in to book your tickets.</span>
+            </div>
+            <button class="button button-primary button-wide" id="approval-back-to-login" type="button">Back to sign in</button>
+          </section>
+        </section>
+      </section>
+
+      <section id="dashboard-view" hidden>
+        <div class="dashboard-heading">
+          <div>
+            <p class="eyebrow">STUHUB · YOUR TICKETING HOME</p>
+            <h1 id="welcome-heading">Discover your next event</h1>
+            <p class="intro-description" id="welcome-subtitle">Your events, tickets, and updates in one place.</p>
+          </div>
+          <div class="heading-actions">
+            <button class="button button-secondary" id="refresh-button" type="button">Refresh</button>
+            <button class="button button-quiet" id="signout-button" type="button">Sign out</button>
+          </div>
+        </div>
+
+        <nav class="dashboard-nav" aria-label="Dashboard sections">
+          <button class="dashboard-nav-button active" id="events-tab" type="button" aria-pressed="true">Explore events</button>
+          <button class="dashboard-nav-button" id="tickets-tab" type="button" aria-pressed="false">Support desk</button>
+          <button class="dashboard-nav-button" id="accounts-tab" type="button" aria-pressed="false" hidden>Account approvals <span id="pending-account-count" class="nav-count" hidden>0</span></button>
+        </nav>
+
+        <section id="tickets-view">
+          <section class="support-intro" aria-labelledby="support-heading">
+            <div class="support-intro-copy">
+              <p class="eyebrow">STUHUB HELP CENTER</p>
+              <h2 id="support-heading">How can we help?</h2>
+              <p>Find quick answers about bookings, payments, and your account. If you already have a support ticket, open it below to follow up with the team.</p>
+            </div>
+            <div class="support-safety-note">
+              <span class="support-safety-icon" aria-hidden="true">!</span>
+              <p><strong>Keep your account safe.</strong> StuHub support will never ask for your password, banking PIN, or one-time verification code.</p>
+            </div>
+          </section>
+
+          <section class="support-topics" aria-label="Popular support topics">
+            <article class="panel support-topic">
+              <span class="support-topic-icon" aria-hidden="true">01</span>
+              <h3>Booking an event</h3>
+              <p>Reserve a place from Explore events. Your reservation and its latest status appear under My bookings.</p>
+            </article>
+            <article class="panel support-topic">
+              <span class="support-topic-icon" aria-hidden="true">02</span>
+              <h3>Payment help</h3>
+              <p>For paid events, follow the organizer’s transfer instructions and submit your confirmation from your booking.</p>
+            </article>
+            <article class="panel support-topic">
+              <span class="support-topic-icon" aria-hidden="true">03</span>
+              <h3>Account access</h3>
+              <p>New accounts need administrator approval. If your request is still pending, check back after it has been reviewed.</p>
+            </article>
+          </section>
+
+          <section class="panel support-faq" aria-labelledby="support-faq-heading">
+            <div class="support-section-heading">
+              <p class="eyebrow">QUICK ANSWERS</p>
+              <h2 id="support-faq-heading">Frequently asked questions</h2>
+            </div>
+            <details>
+              <summary>Where can I check my reservation?</summary>
+              <p>Open Explore events and scroll to My bookings. Your reservation status and any available payment steps are shown there.</p>
+            </details>
+            <details>
+              <summary>What should I do after making a transfer?</summary>
+              <p>Open the relevant booking and submit your payment confirmation. The event organizer will review it and update your booking status.</p>
+            </details>
+            <details>
+              <summary>How do I follow up on a support request?</summary>
+              <p>Submit a request using the form below. Select your ticket from the list to read the conversation and send a reply.</p>
+            </details>
+            <details>
+              <summary>My account is waiting for approval. What now?</summary>
+              <p>An administrator must review new account requests before sign-in is enabled. Return to StuHub and try again after you receive confirmation that your account was approved.</p>
+            </details>
+          </section>
+
+          <section id="client-ticket-panel" class="panel admin-panel" hidden>
+            <div class="panel-heading compact-heading">
+              <p class="eyebrow">CONTACT SUPPORT</p>
+              <h2>Create a support request</h2>
+              <p>Tell us what happened. Your request will appear in your tickets and the support team’s queue.</p>
+            </div>
+            <form id="client-ticket-form" class="ticket-form support-request-form">
+              <label>
+                <span>Subject</span>
+                <input name="subject" maxlength="120" placeholder="Briefly describe what you need help with" required />
+              </label>
+              <label class="description-field">
+                <span>How can we help?</span>
+                <textarea name="description" rows="4" maxlength="5000" placeholder="Include the relevant event, booking, or payment details. Do not include your password, PIN, or verification code." required></textarea>
+              </label>
+              <div class="form-action"><button class="button button-primary" type="submit">Send support request</button></div>
+            </form>
+          </section>
+
+          <section id="admin-panel" class="panel admin-panel" hidden>
+            <div class="panel-heading compact-heading">
+              <p class="eyebrow">ADMIN</p>
+              <h2>Create a ticket</h2>
+            </div>
+            <form id="create-ticket-form" class="ticket-form">
+              <label>
+                <span>Client</span>
+                <select name="clientId" id="client-select" required>
+                  <option value="">Choose a client</option>
+                </select>
+              </label>
+              <label>
+                <span>Subject</span>
+                <input name="subject" maxlength="120" placeholder="What does the client need help with?" required />
+              </label>
+              <label>
+                <span>Priority</span>
+                <select name="priority">
+                  <option value="low">Low</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </label>
+              <label class="description-field">
+                <span>Description</span>
+                <textarea name="description" rows="3" placeholder="Add useful details for the support team" required></textarea>
+              </label>
+              <div class="form-action"><button class="button button-primary" type="submit">Create ticket</button></div>
+            </form>
+          </section>
+
+          <div class="workspace-grid">
+            <section class="panel ticket-panel" aria-labelledby="ticket-list-heading">
+              <div class="list-heading">
+                <div>
+                  <p class="eyebrow" id="ticket-list-kicker">YOUR SUPPORT</p>
+                  <h2 id="ticket-list-heading">Your tickets</h2>
+                </div>
+                <span class="count-pill" id="ticket-count">0</span>
+              </div>
+              <div id="ticket-list" class="ticket-list">
+                <div class="empty-state">Loading tickets…</div>
+              </div>
+            </section>
+
+            <section id="ticket-detail" class="panel detail-panel" aria-live="polite">
+              <div class="empty-detail">
+                <div class="empty-detail-icon">↗</div>
+                <h2>Choose a ticket</h2>
+                <p>Select a ticket to see its details and conversation.</p>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section id="events-view" hidden>
+          <section class="event-discovery-hero" aria-labelledby="event-hero-heading">
+            <div class="event-discovery-copy">
+              <p class="eyebrow">YOUR NEXT STORY STARTS HERE</p>
+              <h2 id="event-hero-heading">Make plans worth remembering.</h2>
+              <p>Discover something new, book your spot, and get ready for a good time.</p>
+            </div>
+            <div class="event-hero-perks">
+              <span><strong>01</strong> Find your event</span>
+              <span><strong>02</strong> Reserve your spot</span>
+              <span><strong>03</strong> Show up &amp; enjoy</span>
+            </div>
+          </section>
+
+          <section id="event-admin-panel" class="panel admin-panel event-admin-panel" hidden>
+            <div class="panel-heading compact-heading">
+              <p class="eyebrow">ADMIN · EVENTS</p>
+              <h2>Publish an event</h2>
+              <p>Set the ticket price and your transfer instructions. Payment windows are 15 minutes.</p>
+            </div>
+            <form id="create-event-form" class="event-form">
+              <label>
+                <span>Event name</span>
+                <input name="title" maxlength="160" placeholder="Welcome week meetup" required />
+              </label>
+              <label>
+                <span>Location</span>
+                <input name="location" maxlength="200" placeholder="Campus or online" required />
+              </label>
+              <label>
+                <span>Date and time</span>
+                <input name="startsAt" type="datetime-local" required />
+              </label>
+              <label>
+                <span>Available places</span>
+                <input name="capacity" type="number" min="1" max="100000" step="1" placeholder="50" required />
+              </label>
+              <label>
+                <span>Price per person</span>
+                <input name="price" type="number" min="0" max="99999999.99" step="0.01" value="0" required />
+              </label>
+              <label>
+                <span>Currency</span>
+                <input name="currency" maxlength="3" pattern="[A-Za-z]{3}" value="KES" required />
+              </label>
+              <label class="event-description-field">
+                <span>About this event</span>
+                <textarea name="description" rows="3" placeholder="Tell clients what to expect." required></textarea>
+              </label>
+              <label class="event-description-field event-image-field">
+                <span>Event image <span class="optional-field">(optional)</span></span>
+                <input id="event-image-input" name="image" type="file" accept="image/jpeg,image/png,image/webp" />
+                <span class="field-help">Add a JPG, PNG, or WebP image up to 5 MB.</span>
+                <span id="event-image-preview" class="event-image-preview" hidden>
+                  <img id="event-image-preview-img" alt="Preview of the selected event image" />
+                  <button id="remove-event-image" class="button button-secondary" type="button">Remove image</button>
+                </span>
+              </label>
+              <label class="event-description-field" id="event-payment-instructions-field">
+                <span>Bank or mobile-money transfer instructions</span>
+                <textarea name="paymentInstructions" rows="3" placeholder="Add the payment recipient, account or till details, and any reference clients should include."></textarea>
+                <span class="field-help">Shown only to clients who reserve a paid place. Never enter passwords or PINs.</span>
+              </label>
+              <div class="form-action"><button class="button button-primary" type="submit">Publish event</button></div>
+            </form>
+          </section>
+
+          <section class="event-section" aria-labelledby="event-list-heading">
+            <div class="list-heading event-section-heading">
+              <div>
+                <p class="eyebrow">WHAT’S HAPPENING</p>
+                <h2 id="event-list-heading">Upcoming events</h2>
+              </div>
+              <button class="button button-secondary" id="refresh-events-button" type="button">Refresh events</button>
+            </div>
+            <div id="event-list" class="event-grid">
+              <div class="panel empty-state">Loading events…</div>
+            </div>
+          </section>
+
+          <section class="event-section">
+            <div class="list-heading event-section-heading">
+              <div>
+                <p class="eyebrow">YOUR RESERVATIONS</p>
+                <h2 id="my-bookings-heading">My bookings</h2>
+              </div>
+              <span class="count-pill" id="booking-count">0</span>
+            </div>
+            <div id="my-bookings" class="booking-list">
+              <div class="panel empty-state">Loading bookings…</div>
+            </div>
+          </section>
+
+          <section id="admin-bookings-panel" class="event-section" hidden>
+            <div class="list-heading event-section-heading">
+              <div>
+                <p class="eyebrow">ADMIN · TRANSFER REVIEW</p>
+                <h2>Payment confirmations</h2>
+              </div>
+              <span class="count-pill" id="review-count">0</span>
+            </div>
+            <div id="admin-bookings" class="booking-list">
+              <div class="panel empty-state">Loading payment reviews…</div>
+            </div>
+          </section>
+        </section>
+
+        <section id="accounts-view" hidden>
+          <section class="event-section">
+            <div class="list-heading event-section-heading">
+              <div>
+                <p class="eyebrow">ADMIN · NEW REGISTRATIONS</p>
+                <h2>Account approval requests</h2>
+              </div>
+              <button class="button button-secondary" id="refresh-accounts-button" type="button">Refresh requests</button>
+            </div>
+            <div id="pending-accounts" class="booking-list">
+              <div class="panel empty-state">Loading approval requests…</div>
+            </div>
+          </section>
+        </section>
+      </section>
+
+      <footer class="page-footer">
+        <span>StuHub · Go where the good times are.</span>
+        <span>Find your event. Transfer. Save your ticket.</span>
+      </footer>
+    </main>
+  </body>
+</html>
