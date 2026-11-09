@@ -5,13 +5,14 @@ API and a browser-based frontend.
 
 ## Run locally
 
-In Windows PowerShell:
+From the project root, in Windows PowerShell:
 
 ```powershell
-cd server
-npm.cmd install
+npm.cmd --prefix server install
 npm.cmd run dev
 ```
+
+In other shells, use `npm --prefix server install` and `npm run dev`.
 
 Open [http://localhost:8080](http://localhost:8080). MySQL must be running.
 See [server/README.md](server/README.md) for database configuration, routes,

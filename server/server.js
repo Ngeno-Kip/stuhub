@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
 const path = require('path');
 const { router: authRoutes } = require('./routes/auth');
 const accountRoutes = require('./routes/accounts');
@@ -42,6 +43,44 @@ app.use('/api/events', eventRoutes);
 const PORT = Number(process.env.PORT) || 8080;
 const server = app.listen(PORT, () => {
   console.log(`Stuhub website listening on http://localhost:${PORT}`);
+});
+
+server.on('error', (error) => {
+  if (error.code !== 'EADDRINUSE') {
+    console.error(`StuHub could not start: ${error.message}`);
+    process.exit(1);
+  }
+
+  const request = http.get(
+    { hostname: '127.0.0.1', port: PORT, path: '/health', timeout: 2000 },
+    (response) => {
+      let body = '';
+      response.setEncoding('utf8');
+      response.on('data', (chunk) => {
+        body += chunk;
+      });
+      response.on('end', () => {
+        let health;
+        try {
+          health = JSON.parse(body);
+        } catch {
+          health = null;
+        }
+
+        if (health && health.storage === 'MySQL') {
+          console.log(`StuHub is already running at http://localhost:${PORT}`);
+          process.exit(0);
+        }
+
+        console.error(`Port ${PORT} is already in use by another application.`);
+        process.exit(1);
+      });
+    },
+  );
+  request.on('error', () => {
+    console.error(`Port ${PORT} is already in use by another application.`);
+    process.exit(1);
+  });
 });
 
 initializeDatabase()
