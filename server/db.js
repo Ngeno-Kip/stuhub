@@ -6,13 +6,23 @@ const jwt = require('jsonwebtoken');
 const scrypt = promisify(crypto.scrypt);
 const PASSWORD_KEY_LENGTH = 64;
 const LEGACY_PASSWORD_ROUNDS = 10000;
+const requiredDatabaseSettings = ['MYSQL_HOST', 'MYSQL_PORT', 'MYSQL_USER', 'MYSQL_PASSWORD', 'MYSQL_DATABASE'];
+const missingDatabaseSettings = requiredDatabaseSettings.filter((setting) => !process.env[setting]);
+if (missingDatabaseSettings.length) {
+  throw new Error(`Missing database settings in server/.env: ${missingDatabaseSettings.join(', ')}.`);
+}
+
+const databasePort = Number(process.env.MYSQL_PORT);
+if (!Number.isInteger(databasePort) || databasePort < 1 || databasePort > 65535) {
+  throw new Error('MYSQL_PORT in server/.env must be a valid port number.');
+}
 
 const pool = mysql.createPool({
-  host: process.env.MYSQL_HOST || '127.0.0.1',
-  port: Number(process.env.MYSQL_PORT) || 3306,
-  user: process.env.MYSQL_USER || 'root',
-  password: process.env.MYSQL_PASSWORD || '',
-  database: process.env.MYSQL_DATABASE || 'stuhub',
+  host: process.env.MYSQL_HOST,
+  port: databasePort,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -23,6 +33,26 @@ const pool = mysql.createPool({
 function jwtSecret() {
   if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is not configured in server/.env.');
   return process.env.JWT_SECRET;
+}
+
+async function createEventBookingsTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS event_bookings (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      eventId BIGINT UNSIGNED NOT NULL,
+      userId VARCHAR(36) NOT NULL,
+      status VARCHAR(32) NOT NULL,
+      paymentReference VARCHAR(120) NULL,
+      reservedAt DATETIME(3) NOT NULL,
+      paymentDeadline DATETIME(3) NULL,
+      paymentSubmittedAt DATETIME(3) NULL,
+      paidAt DATETIME(3) NULL,
+      INDEX event_bookings_eventId_status_deadline_idx (eventId, status, paymentDeadline),
+      INDEX event_bookings_userId_reservedAt_idx (userId, reservedAt),
+      CONSTRAINT event_bookings_eventId_fk FOREIGN KEY (eventId) REFERENCES events (id),
+      CONSTRAINT event_bookings_userId_fk FOREIGN KEY (userId) REFERENCES users (id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
 }
 
 async function initializeDatabase() {
@@ -88,23 +118,28 @@ async function initializeDatabase() {
   if (!existingEventColumns.has('imageUrl')) {
     await pool.query('ALTER TABLE events ADD COLUMN imageUrl VARCHAR(255) NULL');
   }
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS event_bookings (
-      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-      eventId BIGINT UNSIGNED NOT NULL,
-      userId VARCHAR(36) NOT NULL,
-      status VARCHAR(32) NOT NULL,
-      paymentReference VARCHAR(120) NULL,
-      reservedAt DATETIME(3) NOT NULL,
-      paymentDeadline DATETIME(3) NULL,
-      paymentSubmittedAt DATETIME(3) NULL,
-      paidAt DATETIME(3) NULL,
-      INDEX event_bookings_eventId_status_deadline_idx (eventId, status, paymentDeadline),
-      INDEX event_bookings_userId_reservedAt_idx (userId, reservedAt),
-      CONSTRAINT event_bookings_eventId_fk FOREIGN KEY (eventId) REFERENCES events (id),
-      CONSTRAINT event_bookings_userId_fk FOREIGN KEY (userId) REFERENCES users (id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
+  await createEventBookingsTable();
+  const [bookingColumns] = await pool.query('SHOW COLUMNS FROM event_bookings');
+  const existingBookingColumns = new Set(bookingColumns.map((column) => column.Field));
+  const requiredBookingColumns = [
+    'id',
+    'eventId',
+    'userId',
+    'status',
+    'paymentReference',
+    'reservedAt',
+    'paymentDeadline',
+    'paymentSubmittedAt',
+    'paidAt',
+  ];
+  if (!requiredBookingColumns.every((column) => existingBookingColumns.has(column))) {
+    const [[{ rowCount }]] = await pool.query('SELECT COUNT(*) AS rowCount FROM event_bookings');
+    if (Number(rowCount) !== 0) {
+      throw new Error('The event_bookings table has an incompatible schema and contains data; migrate it before starting StuHub.');
+    }
+    await pool.query('DROP TABLE event_bookings');
+    await createEventBookingsTable();
+  }
   const [userColumns] = await pool.query('SHOW COLUMNS FROM users');
   const existingUserColumns = new Set(userColumns.map((column) => column.Field));
   const approvalColumns = [
