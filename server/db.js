@@ -178,6 +178,20 @@ async function initializeDatabase() {
       await pool.query(`ALTER TABLE users ADD COLUMN ${column} ${definition}`);
     }
   }
+
+  const configuredAdminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  const configuredAdminPassword = process.env.ADMIN_PASSWORD;
+  if (configuredAdminEmail || configuredAdminPassword) {
+    if (!configuredAdminEmail || !configuredAdminPassword) {
+      throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD must be configured together.');
+    }
+    const adminMessage = await seedAdmin({
+      name: String(process.env.ADMIN_NAME || 'StuHub Administrator').trim() || 'StuHub Administrator',
+      email: configuredAdminEmail,
+      password: configuredAdminPassword,
+    });
+    console.log(adminMessage);
+  }
 }
 
 async function checkDatabase() {

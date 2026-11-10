@@ -21,8 +21,20 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+const databaseReady = initializeDatabase()
+  .then(() => {
+    console.log('MySQL database is ready.');
+    const expiryTimer = setInterval(() => {
+      expireEventBookings().catch((error) => {
+        console.error(`Event booking expiry failed: ${error.message}`);
+      });
+    }, 30_000);
+    expiryTimer.unref();
+  });
+
 app.get('/health', async (req, res) => {
   try {
+    await databaseReady;
     await checkDatabase();
     return res.json({ status: 'ok', storage: 'MySQL' });
   } catch (error) {
@@ -31,6 +43,16 @@ app.get('/health', async (req, res) => {
       storage: 'MySQL',
       message: error.message,
     });
+  }
+});
+
+app.use('/api', async (req, res, next) => {
+  try {
+    await databaseReady;
+    return next();
+  } catch (error) {
+    console.error(`MySQL database initialization failed: ${error.message}`);
+    return res.status(503).json({ message: 'MySQL database is unavailable.' });
   }
 });
 
@@ -82,18 +104,6 @@ server.on('error', (error) => {
     process.exit(1);
   });
 });
-
-initializeDatabase()
-  .then(() => {
-    console.log('MySQL database is ready.');
-    const expiryTimer = setInterval(() => {
-      expireEventBookings().catch((error) => {
-        console.error(`Event booking expiry failed: ${error.message}`);
-      });
-    }, 30_000);
-    expiryTimer.unref();
-  })
-  .catch((error) => console.error(`MySQL database initialization failed: ${error.message}`));
 
 function shutdown() {
   server.close(() => {

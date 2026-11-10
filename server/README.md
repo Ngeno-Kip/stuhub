@@ -71,8 +71,12 @@ no account details are sent to a messaging service.
 Passwords use salted scrypt hashes. Legacy plaintext and HMAC-SHA-256 hashes
 are upgraded to scrypt after a successful login.
 
-To seed an admin, set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`, then run
-`npm run seed` (or `npm.cmd run seed` in PowerShell).
+To seed an admin locally, set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`, then
+run `npm run seed` (or `npm.cmd run seed` in PowerShell). In Vercel, add
+`ADMIN_EMAIL`, `ADMIN_PASSWORD`, and optionally `ADMIN_NAME` as Production
+environment variables. StuHub will create that admin automatically during the
+next deployment's database initialization; an existing admin is never
+overwritten.
 
 ## Photography
 
