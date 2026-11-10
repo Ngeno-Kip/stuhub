@@ -1,7 +1,4 @@
 const express = require('express');
-const crypto = require('crypto');
-const fs = require('fs/promises');
-const path = require('path');
 const multer = require('multer');
 const {
   createEvent,
@@ -113,28 +110,9 @@ router.post('/', protect, adminOnly, receiveEventImage, async (req, res) => {
     });
   }
 
-  let imagePath = null;
-  if (req.file) {
-    const filename = `${crypto.randomUUID()}${extension}`;
-    const uploadDirectory = path.join(__dirname, '..', 'public', 'uploads');
-    imagePath = path.join(uploadDirectory, filename);
-    try {
-      await fs.mkdir(uploadDirectory, { recursive: true });
-      await fs.writeFile(imagePath, req.file.buffer, { flag: 'wx' });
-    } catch (error) {
-      console.error(`Could not save event image ${imagePath}: ${error.message}`);
-      if (error.code !== 'EEXIST') {
-        try {
-          await fs.unlink(imagePath);
-        } catch (cleanupError) {
-          if (cleanupError.code !== 'ENOENT') {
-            console.error(`Could not remove incomplete event image ${imagePath}: ${cleanupError.message}`);
-          }
-        }
-      }
-      return res.status(500).json({ message: 'The event image could not be saved.' });
-    }
-  }
+  const imageData = req.file
+    ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`
+    : null;
 
   try {
     const result = await createEvent(req.user, {
@@ -146,25 +124,11 @@ router.post('/', protect, adminOnly, receiveEventImage, async (req, res) => {
       price: parsedPrice,
       currency: normalizedCurrency,
       paymentInstructions: typeof paymentInstructions === 'string' ? paymentInstructions.trim() : '',
-      imageUrl: imagePath ? `/uploads/${path.basename(imagePath)}` : null,
+      imageUrl: null,
+      imageData,
     });
-    if (result.status >= 400 && imagePath) {
-      try {
-        await fs.unlink(imagePath);
-      } catch (error) {
-        console.error(`Could not remove unused event image ${imagePath}: ${error.message}`);
-      }
-      imagePath = null;
-    }
     return sendResult(res, result);
   } catch (error) {
-    if (imagePath) {
-      try {
-        await fs.unlink(imagePath);
-      } catch (cleanupError) {
-        console.error(`Could not remove unused event image ${imagePath}: ${cleanupError.message}`);
-      }
-    }
     return handleStorageError(res, error);
   }
 });

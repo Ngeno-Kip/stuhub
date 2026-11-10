@@ -372,7 +372,7 @@ function renderEvents() {
     const imageIndex = Math.abs(Number(event.id) || 0) % imagePaths.length;
     card.innerHTML = `
       <div class="event-card-image">
-        <img src="${escapeHtml(event.imageUrl || imagePaths[imageIndex])}" alt="${escapeHtml(event.title)} — event photography" loading="lazy" />
+        <img src="${escapeHtml(event.imageData || event.imageUrl || imagePaths[imageIndex])}" alt="${escapeHtml(event.title)} — event photography" loading="lazy" />
         <span class="event-image-label">GOOD TIMES AWAIT</span>
       </div>
       <div class="event-card-topline">

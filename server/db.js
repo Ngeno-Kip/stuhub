@@ -133,6 +133,7 @@ async function initializeDatabase() {
       currency CHAR(3) NOT NULL DEFAULT 'KES',
       paymentInstructions TEXT NULL,
       imageUrl VARCHAR(255) NULL,
+      imageData MEDIUMTEXT NULL,
       createdBy VARCHAR(36) NOT NULL,
       createdAt DATETIME(3) NOT NULL,
       INDEX events_startsAt_idx (startsAt),
@@ -143,6 +144,9 @@ async function initializeDatabase() {
   const existingEventColumns = new Set(eventColumns.map((column) => column.Field));
   if (!existingEventColumns.has('imageUrl')) {
     await pool.query('ALTER TABLE events ADD COLUMN imageUrl VARCHAR(255) NULL');
+  }
+  if (!existingEventColumns.has('imageData')) {
+    await pool.query('ALTER TABLE events ADD COLUMN imageData MEDIUMTEXT NULL');
   }
   await createEventBookingsTable();
   const [bookingColumns] = await pool.query('SHOW COLUMNS FROM event_bookings');
@@ -489,7 +493,7 @@ async function getEvents() {
   const [rows] = await pool.query(`
     SELECT
       e.id, e.title, e.description, e.location, e.startsAt, e.capacity,
-      e.price, e.currency, e.createdAt, e.imageUrl,
+      e.price, e.currency, e.createdAt, e.imageUrl, e.imageData,
       GREATEST(
         e.capacity - COALESCE(SUM(
           CASE
@@ -517,8 +521,8 @@ async function createEvent(user, input) {
   }
   const [result] = await pool.execute(`
     INSERT INTO events
-      (title, description, location, startsAt, capacity, price, currency, paymentInstructions, imageUrl, createdBy, createdAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(3))
+      (title, description, location, startsAt, capacity, price, currency, paymentInstructions, imageUrl, imageData, createdBy, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(3))
   `, [
     input.title,
     input.description,
@@ -529,6 +533,7 @@ async function createEvent(user, input) {
     input.currency,
     input.paymentInstructions || null,
     input.imageUrl || null,
+    input.imageData || null,
     user.id,
   ]);
   return { status: 201, message: 'Event created.', eventId: String(result.insertId) };

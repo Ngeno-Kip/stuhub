@@ -59,9 +59,9 @@ appear in their own ticket list and the admin ticket queue, where the client's
 name and email are available to the support team.
 
 Admins can optionally attach one JPG, PNG, or WebP event image (up to 5 MB)
-when publishing an event. Images are stored under `public/uploads` with
-generated filenames and served by the site; events without an uploaded image
-continue to use the built-in event photography.
+when publishing an event. New uploads are stored in MySQL so they remain
+available across Vercel deployments and serverless function instances; events
+without an uploaded image continue to use the built-in event photography.
 
 Newly registered client accounts remain pending until an administrator
 approves the request from the **Account approvals** dashboard. Existing
