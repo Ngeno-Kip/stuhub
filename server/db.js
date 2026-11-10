@@ -6,29 +6,55 @@ const jwt = require('jsonwebtoken');
 const scrypt = promisify(crypto.scrypt);
 const PASSWORD_KEY_LENGTH = 64;
 const LEGACY_PASSWORD_ROUNDS = 10000;
-const requiredDatabaseSettings = ['MYSQL_HOST', 'MYSQL_PORT', 'MYSQL_USER', 'MYSQL_PASSWORD', 'MYSQL_DATABASE'];
-const missingDatabaseSettings = requiredDatabaseSettings.filter((setting) => !process.env[setting]);
-if (missingDatabaseSettings.length) {
-  throw new Error(`Missing database settings in server/.env: ${missingDatabaseSettings.join(', ')}.`);
+const requiredDatabaseSettings = ['MYSQL_HOST', 'MYSQL_PORT', 'MYSQL_USER', 'MYSQL_DATABASE'];
+let connectionPool;
+
+function getConnectionPool() {
+  if (connectionPool) return connectionPool;
+
+  const missingDatabaseSettings = requiredDatabaseSettings.filter(
+    (setting) => !String(process.env[setting] || '').trim(),
+  );
+  if (missingDatabaseSettings.length) {
+    throw new Error(
+      `Missing database settings: ${missingDatabaseSettings.join(', ')}. ` +
+      'Configure them in Vercel Project Settings or server/.env locally.',
+    );
+  }
+
+  const databasePort = Number(process.env.MYSQL_PORT);
+  if (!Number.isInteger(databasePort) || databasePort < 1 || databasePort > 65535) {
+    throw new Error('MYSQL_PORT must be a valid port number.');
+  }
+
+  connectionPool = mysql.createPool({
+    host: process.env.MYSQL_HOST,
+    port: databasePort,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD || '',
+    database: process.env.MYSQL_DATABASE,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    timezone: 'Z',
+    charset: 'utf8mb4',
+  });
+  return connectionPool;
 }
 
-const databasePort = Number(process.env.MYSQL_PORT);
-if (!Number.isInteger(databasePort) || databasePort < 1 || databasePort > 65535) {
-  throw new Error('MYSQL_PORT in server/.env must be a valid port number.');
-}
-
-const pool = mysql.createPool({
-  host: process.env.MYSQL_HOST,
-  port: databasePort,
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  timezone: 'Z',
-  charset: 'utf8mb4',
-});
+// Keep the rest of the data layer unchanged while allowing the website to boot
+// when Vercel has not yet been given database credentials.
+const pool = {
+  query: (...args) => getConnectionPool().query(...args),
+  execute: (...args) => getConnectionPool().execute(...args),
+  getConnection: (...args) => getConnectionPool().getConnection(...args),
+  end: async (...args) => {
+    if (!connectionPool) return;
+    const currentPool = connectionPool;
+    connectionPool = undefined;
+    await currentPool.end(...args);
+  },
+};
 
 function jwtSecret() {
   if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is not configured in server/.env.');
